@@ -1,3 +1,5 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { generateLabel, releaseLabel } from "./label-gen";
 import { generateRunnerToken } from "./gitea-client";
 import {
@@ -12,6 +14,7 @@ import {
 
 const RUNNER_LABEL_PREFIX = "u128.arcturus.runner";
 const RUNNER_IMAGE = "gitea/act_runner:latest";
+const CONFIG_DIR = "/home/akippnn/stacks/.runner-data";
 
 function runnerName(org: string, label: string): string {
     return `arcturus-runner-${org}-${label}`;
@@ -23,6 +26,34 @@ function containerLabels(org: string, label: string): Record<string, string> {
         "u128.arcturus.runner.org": org,
         "u128.arcturus.runner.label": label,
     };
+}
+
+function generateConfigYaml(giteaUrl: string, network: string, labels: string): string {
+    const labelLines = labels.split(",").map(l => `      - "${l.trim()}"`).join("\n");
+    return `log:
+  level: info
+
+runner:
+  file: .runner
+  capacity: 1
+  envs:
+    DOCKER_HOST: unix:///var/run/docker.sock
+  timeout: 3h
+  fetch_timeout: 5s
+  fetch_interval: 2s
+  labels:
+${labelLines}
+
+container:
+  network: "${network}"
+  privileged: true
+  options: "--security-opt label=disable"
+  valid_volumes: ["**", "/var/run/docker.sock", "/run/user/1001/podman/podman.sock"]
+  docker_host: "-"
+
+cache:
+  enabled: true
+`;
 }
 
 export async function createRunner(
@@ -45,6 +76,11 @@ export async function createRunner(
 
     const token = await generateRunnerToken(giteaUrl, opts.giteaAdminToken || "", org, opts.giteaContainer);
     const name = runnerName(org, label);
+    const dataDir = path.join(CONFIG_DIR, name);
+
+    // Write config.yaml to a host path that can be bind-mounted into the runner
+    fs.mkdirSync(dataDir, { recursive: true });
+    fs.writeFileSync(path.join(dataDir, "config.yaml"), generateConfigYaml(giteaUrl, network, labels), "utf-8");
 
     const config = {
         Image: RUNNER_IMAGE,
@@ -63,6 +99,7 @@ export async function createRunner(
         HostConfig: {
             Binds: [
                 "/run/user/1001/podman/podman.sock:/var/run/docker.sock",
+                `${dataDir}:/data`,
             ],
             RestartPolicy: { Name: "always" },
             SecurityOpt: ["label=disable"],
@@ -87,6 +124,10 @@ export async function deleteRunner(name: string): Promise<void> {
 
     await stopContainer(name);
     await removeContainer(name);
+
+    // Clean up config data directory
+    const dataDir = path.join(CONFIG_DIR, name);
+    try { fs.rmSync(dataDir, { recursive: true, force: true }); } catch { /* ignore */ }
 }
 
 export async function listRunners(): Promise<any[]> {
