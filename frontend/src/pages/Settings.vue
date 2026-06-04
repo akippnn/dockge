@@ -92,6 +92,9 @@ export default {
                 extensions: {
                     title: "Extensions",
                 },
+                webhook: {
+                    title: "Integrations",
+                },
             };
         },
     },

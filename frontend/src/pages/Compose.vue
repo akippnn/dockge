@@ -3,7 +3,7 @@
         <div>
             <h1 v-if="isAdd" class="mb-3">{{ $t("compose") }}</h1>
             <h1 v-else class="mb-3">
-                <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
+                <Uptime :stack="globalStack" :show-label="true" /> {{ stack.name }}
                 <span v-if="stack.isProtected" class="badge bg-secondary ms-2" style="font-size: 0.5em; vertical-align: middle;">
                     <font-awesome-icon icon="lock" class="me-1" />PROTECTED
                 </span>

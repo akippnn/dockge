@@ -88,6 +88,7 @@ export class Stack {
             composeFileName: this._composeFileName,
             endpoint,
             isProtected: this.isProtected,
+            managedBy: this.managedBy,
         };
     }
 
@@ -111,6 +112,16 @@ export class Stack {
 
     get isProtected() : boolean {
         return fs.existsSync(path.join(this.path, ".dockge-protect"));
+    }
+
+    get managedBy() : string {
+        const p = path.join(this.path, ".dockge-protect");
+        try {
+            const data = JSON.parse(fs.readFileSync(p, "utf-8"));
+            return data.managed_by || "";
+        } catch {
+            return "";
+        }
     }
 
     get status() : number {
