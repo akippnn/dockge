@@ -8,12 +8,25 @@ export interface DockgeExtension {
     routes?: (router: any) => void;
     augmentStack?: (stack: any) => any;
     settings?: Record<string, { label: string; type?: string; default?: string }>;
+    // Lifecycle hooks — called after stack actions complete
+    onStackAction?: (action: string, stackName: string, success: boolean) => void;
 }
 
 const loadedExtensions: Map<string, DockgeExtension> = new Map();
 
 export function getExtensions(): Map<string, DockgeExtension> {
     return loadedExtensions;
+}
+
+/** Notify all loaded extensions of a stack action */
+export function notifyExtensions(action: string, stackName: string, success: boolean): void {
+    for (const [_, ext] of loadedExtensions) {
+        if (ext.onStackAction) {
+            try {
+                ext.onStackAction(action, stackName, success);
+            } catch { /* ignore extension errors */ }
+        }
+    }
 }
 
 export async function loadExtensions(): Promise<void> {

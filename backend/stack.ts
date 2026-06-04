@@ -1,5 +1,5 @@
 import { DockgeServer } from "./dockge-server";
-import { sendDiscordNotification } from "./notify";
+import { notifyExtensions } from "./extensions/loader";
 import fs, { promises as fsAsync } from "fs";
 import { log } from "./log";
 import yaml from "yaml";
@@ -219,10 +219,10 @@ export class Stack {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
-            sendDiscordNotification(`Stack **${this.name}** failed to deploy ❌`, "error");
+            notifyExtensions("deploy", this.name, false);
             throw new Error("Failed to deploy, please check the terminal output for more information.");
         }
-        sendDiscordNotification(`Stack **${this.name}** deployed successfully ✅`, "success");
+        notifyExtensions("deploy", this.name, true);
         return exitCode;
     }
 
@@ -236,7 +236,7 @@ export class Stack {
 
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("down", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
-            sendDiscordNotification(`Stack **${this.name}** failed to delete ❌`, "error");
+            notifyExtensions("delete", this.name, false);
             throw new Error("Failed to delete, please check the terminal output for more information.");
         }
 
@@ -246,7 +246,7 @@ export class Stack {
             force: true
         });
 
-        sendDiscordNotification(`Stack **${this.name}** deleted 🗑️`, "warn");
+        notifyExtensions("delete", this.name, true);
         return exitCode;
     }
 
@@ -443,10 +443,10 @@ export class Stack {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("up", "-d", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
-            sendDiscordNotification(`Stack **${this.name}** failed to start ❌`, "error");
+            notifyExtensions("start", this.name, false);
             throw new Error("Failed to start, please check the terminal output for more information.");
         }
-        sendDiscordNotification(`Stack **${this.name}** started ▶️`, "success");
+        notifyExtensions("start", this.name, true);
         return exitCode;
     }
 
@@ -454,10 +454,10 @@ export class Stack {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("stop"), this.path);
         if (exitCode !== 0) {
-            sendDiscordNotification(`Stack **${this.name}** failed to stop ❌`, "error");
+            notifyExtensions("stop", this.name, false);
             throw new Error("Failed to stop, please check the terminal output for more information.");
         }
-        sendDiscordNotification(`Stack **${this.name}** stopped ⏹️`, "warn");
+        notifyExtensions("stop", this.name, true);
         return exitCode;
     }
 
@@ -465,10 +465,10 @@ export class Stack {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("restart"), this.path);
         if (exitCode !== 0) {
-            sendDiscordNotification(`Stack **${this.name}** failed to restart ❌`, "error");
+            notifyExtensions("restart", this.name, false);
             throw new Error("Failed to restart, please check the terminal output for more information.");
         }
-        sendDiscordNotification(`Stack **${this.name}** restarted 🔄`, "info");
+        notifyExtensions("restart", this.name, true);
         return exitCode;
     }
 
