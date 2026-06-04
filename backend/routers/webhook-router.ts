@@ -20,26 +20,7 @@ export class WebhookRouter extends Router {
         const router = express.Router();
         router.use(express.json());
 
-        // Auth middleware
-        router.use("/api/webhook", async (req, res, next) => {
-            const secret = await this.resolve("webhookSecret", "WEBHOOK_SECRET", "");
-            if (!secret) {
-                res.status(500).json({ error: "Webhook secret not configured. Set via POST /api/webhook/settings or WEBHOOK_SECRET env var." });
-                return;
-            }
-            const auth = req.headers.authorization;
-            if (!auth || !auth.startsWith("Bearer ")) {
-                res.status(401).json({ error: "Missing or invalid Authorization header" });
-                return;
-            }
-            if (auth.slice(7) !== secret) {
-                res.status(401).json({ error: "Invalid webhook secret" });
-                return;
-            }
-            next();
-        });
-
-        // GET /api/webhook/settings
+        // GET /api/webhook/settings is public (shows status only, no secrets)
         router.get("/api/webhook/settings", async (req, res) => {
             const secret = await this.resolve("webhookSecret", "WEBHOOK_SECRET", "");
             const discordUrl = await this.resolve("discordWebhookUrl", "DISCORD_WEBHOOK_URL", "");
@@ -57,6 +38,25 @@ export class WebhookRouter extends Router {
                     { method: "GET", path: "/api/webhook/settings", description: "This page" },
                 ],
             });
+        });
+
+        // Auth middleware (exempt GET settings)
+        router.use("/api/webhook", async (req, res, next) => {
+            const secret = await this.resolve("webhookSecret", "WEBHOOK_SECRET", "");
+            if (!secret) {
+                res.status(500).json({ error: "Webhook secret not configured. Set via POST /api/webhook/settings or WEBHOOK_SECRET env var." });
+                return;
+            }
+            const auth = req.headers.authorization;
+            if (!auth || !auth.startsWith("Bearer ")) {
+                res.status(401).json({ error: "Missing or invalid Authorization header" });
+                return;
+            }
+            if (auth.slice(7) !== secret) {
+                res.status(401).json({ error: "Invalid webhook secret" });
+                return;
+            }
+            next();
         });
 
         // POST /api/webhook/settings
