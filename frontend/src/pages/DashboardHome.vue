@@ -104,6 +104,11 @@
                             </button>
                         </form>
                     </div>
+
+                    <!-- Extension Widgets -->
+                    <div class="mt-4">
+                        <ExtensionSlot slot-name="home-overview" />
+                    </div>
                 </div>
             </div>
         </div>

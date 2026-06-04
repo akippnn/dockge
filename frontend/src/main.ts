@@ -6,6 +6,7 @@ import App from "./App.vue";
 import { router } from "./router";
 import { FontAwesomeIcon } from "./icon.js";
 import { i18n } from "./i18n";
+import * as LucideIcons from "lucide-vue-next";
 
 // Dependencies
 import "bootstrap";
@@ -35,6 +36,11 @@ app.use(Toast, {
 app.use(router);
 app.use(i18n);
 app.component("FontAwesomeIcon", FontAwesomeIcon);
+// Register Lucide icons globally as Vue components (e.g., <Layers />, <Plus />, etc.)
+for (const [name, component] of Object.entries(LucideIcons)) {
+    if (name.endsWith("Icon")) continue; // skip duplicate *Icon exports
+    app.component(name, component);
+}
 app.mount("#app");
 
 /**

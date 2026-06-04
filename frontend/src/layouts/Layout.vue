@@ -33,6 +33,8 @@
                     </router-link>
                 </li>
 
+                <ExtensionSlot slot-name="header-nav" />
+
                 <li v-if="$root.loggedIn" class="nav-item">
                     <div class="dropdown dropdown-profile-pic">
                         <div class="nav-link" data-bs-toggle="dropdown">

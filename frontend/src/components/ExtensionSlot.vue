@@ -8,6 +8,8 @@
 import arcturusStackBadge from "../extensions/arcturus/StackBadge.vue";
 import arcturusDeployButton from "../extensions/arcturus/DeployButton.vue";
 import arcturusSettings from "../extensions/arcturus/Settings.vue";
+import arcturusNavLink from "../extensions/arcturus/NavLink.vue";
+import arcturusHomeWidget from "../extensions/arcturus/HomeWidget.vue";
 import discordSettings from "../../../extensions/discord/frontend/components/DiscordSettings.vue";
 
 const extComponentMap = {
@@ -15,6 +17,8 @@ const extComponentMap = {
         "stack-detail-header": arcturusStackBadge,
         "stack-detail-actions": arcturusDeployButton,
         "settings-pages": arcturusSettings,
+        "header-nav": arcturusNavLink,
+        "home-overview": arcturusHomeWidget,
     },
     discord: {
         "settings-pages": discordSettings,
