@@ -1,0 +1,2 @@
+FROM louislam/dockge:latest
+COPY backend/ /app/backend/
