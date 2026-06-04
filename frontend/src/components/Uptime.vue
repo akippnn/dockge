@@ -9,7 +9,7 @@
 import { statusColor, statusNameShort } from "../../../common/util-common";
 import Orb from "./Orb.vue";
 
-const colorMap = { green: "green", yellow: "yellow", red: "red", gray: "gray" };
+const colorMap = { primary: "green", danger: "red", dark: "gray", secondary: "gray" };
 
 export default {
     components: { Orb },

@@ -1,24 +1,26 @@
 <template>
     <div>
         <h6>Discord Notifications</h6>
-        <p class="text-muted small">Sends stack lifecycle notifications to a Discord channel via webhook.</p>
+        <DgText variant="muted" size="sm">Sends stack lifecycle notifications to a Discord channel via webhook.</DgText>
 
         <form autocomplete="off" @submit.prevent="save">
-            <div class="mb-3">
-                <label class="form-label">Discord Webhook URL</label>
-                <input v-model="webhookUrl" class="form-control" type="url" placeholder="https://discord.com/api/webhooks/..." />
-                <div class="form-text">Notifications for start, stop, restart, deploy, and delete events.</div>
-            </div>
-            <button class="btn btn-primary" type="submit" :disabled="saving">
-                <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>Save
-            </button>
-            <span v-if="saved" class="text-success ms-2">Saved</span>
+            <DgFormGroup label="Discord Webhook URL" help-text="Notifications for start, stop, restart, deploy, and delete events.">
+                <DgFormInput v-model="webhookUrl" type="url" placeholder="https://discord.com/api/webhooks/..." />
+            </DgFormGroup>
+            <DgButton type="submit" :loading="saving">Save</DgButton>
+            <DgText v-if="saved" variant="success" class="ms-2">Saved</DgText>
         </form>
     </div>
 </template>
 
 <script>
+import DgButton from "../../../../frontend/src/components/dg/DgButton.vue";
+import DgFormInput from "../../../../frontend/src/components/dg/DgFormInput.vue";
+import DgFormGroup from "../../../../frontend/src/components/dg/DgFormGroup.vue";
+import DgText from "../../../../frontend/src/components/dg/DgText.vue";
+
 export default {
+    components: { DgButton, DgFormInput, DgFormGroup, DgText },
     data() { return { webhookUrl: "", saving: false, saved: false }; },
     mounted() { this.load(); },
     methods: {
