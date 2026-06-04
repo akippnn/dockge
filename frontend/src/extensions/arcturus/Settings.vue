@@ -122,9 +122,16 @@ export default {
         },
         async deleteRunner(name) {
             try {
-                await fetch(`/api/extensions/arcturus/runners/${encodeURIComponent(name)}`, { method: "DELETE" });
+                const res = await fetch(`/api/extensions/arcturus/runners/${encodeURIComponent(name)}`, { method: "DELETE" });
+                const data = await res.json();
+                if (!data.ok) {
+                    this.$root?.toastError?.(data.msg || "Failed to delete runner");
+                    return;
+                }
                 await this.loadRunners();
-            } catch { /* ignore */ }
+            } catch (e) {
+                this.$root?.toastError?.(`Delete failed: ${e.message}`);
+            }
         },
         async loadSettings() {
             try {
