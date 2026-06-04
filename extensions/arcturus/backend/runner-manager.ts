@@ -2,6 +2,7 @@ import { generateLabel, releaseLabel } from "./label-gen";
 import { generateRunnerToken } from "./gitea-client";
 import {
     createContainer,
+    connectNetwork,
     startContainer,
     stopContainer,
     removeContainer,
@@ -38,27 +39,30 @@ export async function createRunner(org: string): Promise<{ name: string; label: 
 
     const config = {
         Image: RUNNER_IMAGE,
-        Cmd: [
+        Entrypoint: [
             "/bin/sh", "-c",
             "chmod 666 /var/run/docker.sock && cd /data && exec /usr/local/bin/run.sh",
         ],
+        Cmd: [],
         Env: [
             `GITEA_INSTANCE_URL=${GITEA_URL}`,
             `GITEA_RUNNER_REGISTRATION_TOKEN=${token}`,
             `GITEA_RUNNER_NAME=${label}`,
             `GITEA_RUNNER_LABELS=ubuntu-latest:docker://docker.gitea.com/runner-images:ubuntu-latest`,
+            `DOCKER_HOST=unix:///var/run/docker.sock`,
         ],
         HostConfig: {
             Binds: [
-                "/run/user/1001/podman/podman.sock:/var/run/docker.sock:z",
+                "/run/user/1001/podman/podman.sock:/var/run/docker.sock",
             ],
-            NetworkMode: NETWORK,
             RestartPolicy: { Name: "always" },
+            SecurityOpt: ["label=disable"],
         },
         Labels: containerLabels(org, label),
     };
 
     await createContainer(name, config);
+    await connectNetwork(name, NETWORK);
     await startContainer(name);
 
     return { name, label };

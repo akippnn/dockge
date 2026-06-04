@@ -1,4 +1,5 @@
 import http from "http";
+import { execSync } from "child_process";
 
 const socketPath = "/var/run/docker.sock";
 
@@ -37,8 +38,7 @@ export function dockerRequest(method: string, path: string, body?: unknown): Pro
 
 export function dockerExec(container: string, command: string): string {
     const fullCmd = `docker exec ${container} sh -c ${JSON.stringify(command)}`;
-    const result = require("child_process").execSync(fullCmd, { encoding: "utf-8", timeout: 10000 });
-    return result;
+    return execSync(fullCmd, { encoding: "utf-8", timeout: 10000 });
 }
 
 export async function listContainers(label?: string): Promise<DockerContainer[]> {
@@ -57,6 +57,13 @@ export async function containerExists(name: string): Promise<boolean> {
 export async function createContainer(name: string, config: any): Promise<void> {
     const { status, data } = await dockerRequest("POST", `/containers/create?name=${encodeURIComponent(name)}`, config);
     if (status !== 201) throw new Error(`Failed to create container: ${JSON.stringify(data)}`);
+}
+
+export async function connectNetwork(container: string, network: string): Promise<void> {
+    const { status, data } = await dockerRequest("POST", `/networks/${encodeURIComponent(network)}/connect`, {
+        Container: container,
+    });
+    if (status !== 200) throw new Error(`Failed to connect to network ${network}: ${JSON.stringify(data)}`);
 }
 
 export async function startContainer(name: string): Promise<void> {

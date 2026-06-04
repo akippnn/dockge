@@ -6,7 +6,7 @@
 
 <script>
 import { Layers } from "lucide-vue-next";
-import DgBadge from "../components/dg/DgBadge.vue";
+import DgBadge from "../../components/dg/DgBadge.vue";
 
 export default {
     components: { Layers, DgBadge },

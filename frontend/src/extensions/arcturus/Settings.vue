@@ -55,11 +55,11 @@
 </template>
 
 <script>
-import Orb from "../components/Orb.vue";
-import DgButton from "../components/dg/DgButton.vue";
-import DgText from "../components/dg/DgText.vue";
-import DgFormInput from "../components/dg/DgFormInput.vue";
-import DgFormGroup from "../components/dg/DgFormGroup.vue";
+import Orb from "../../components/Orb.vue";
+import DgButton from "../../components/dg/DgButton.vue";
+import DgText from "../../components/dg/DgText.vue";
+import DgFormInput from "../../components/dg/DgFormInput.vue";
+import DgFormGroup from "../../components/dg/DgFormGroup.vue";
 
 export default {
     components: { Orb, DgButton, DgText, DgFormInput, DgFormGroup },

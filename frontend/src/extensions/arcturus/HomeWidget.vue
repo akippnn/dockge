@@ -29,9 +29,9 @@
 
 <script>
 import { Layers } from "lucide-vue-next";
-import Orb from "../components/Orb.vue";
-import DgCard from "../components/dg/DgCard.vue";
-import DgText from "../components/dg/DgText.vue";
+import Orb from "../../components/Orb.vue";
+import DgCard from "../../components/dg/DgCard.vue";
+import DgText from "../../components/dg/DgText.vue";
 
 export default {
     components: { Layers, Orb, DgCard, DgText },
