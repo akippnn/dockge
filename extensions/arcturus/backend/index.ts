@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { Settings } from "/app/backend/settings";
 import * as runnerManager from "./runner-manager";
+import { validateToken } from "./gitea-client";
 
 const SETTINGS_PREFIX = "extension-arcturus";
 
@@ -22,10 +23,22 @@ export default {
         router.post("/api/extensions/arcturus/runners/create", async (req, res) => {
             try {
                 const { org } = req.body || {};
-                if (!org || !["u128", "MProjects"].includes(org)) {
-                    return res.status(400).json({ ok: false, msg: "org must be 'u128' or 'MProjects'" });
+                if (!org || typeof org !== "string" || !org.trim()) {
+                    return res.status(400).json({ ok: false, msg: "org name is required" });
                 }
-                const runner = await runnerManager.createRunner(org);
+
+                const giteaUrl = await getSetting("giteaUrl", "http://gitea-tailscale:3000");
+                const giteaAdminToken = await getSetting("giteaAdminToken", "");
+                const runnerNetwork = await getSetting("runnerNetwork", "internal_routing");
+                const runnerLabels = await getSetting("runnerLabels",
+                    "ubuntu-latest:docker://docker.gitea.com/runner-images:ubuntu-latest");
+
+                const runner = await runnerManager.createRunner(org.trim(), {
+                    giteaUrl,
+                    giteaAdminToken,
+                    network: runnerNetwork,
+                    labels: runnerLabels,
+                });
                 res.json({ ok: true, ...runner });
             } catch (e: any) {
                 res.status(500).json({ ok: false, msg: e.message });
@@ -54,7 +67,7 @@ export default {
         // ─── Deploy ───────────────────────────────────────────
         router.post("/api/extensions/arcturus/deploy", async (req, res) => {
             try {
-                const deployUrl = (await Settings.get("arcturusDeployUrl", SETTINGS_PREFIX)) || "http://arcturus-deploy:8080";
+                const deployUrl = await getSetting("arcturusDeployUrl", "http://arcturus-deploy:8080");
                 const { stack } = req.body || {};
                 if (!stack) return res.status(400).json({ ok: false, msg: "stack is required" });
                 const response = await fetch(`${deployUrl}/deploy?stack=${encodeURIComponent(stack)}`, { method: "POST" });
@@ -96,7 +109,12 @@ export default {
                         ).trim();
                         status = out.includes("Up") ? "running" : "stopped";
                     } catch { /* ignore */ }
-                    stacks.push({ name: entry.name, status, dockgeProtect: isProtected, managedByArcturus: managedBy === "terraform" });
+                    stacks.push({
+                        name: entry.name,
+                        status,
+                        dockgeProtect: isProtected,
+                        managedByArcturus: managedBy === "terraform",
+                    });
                 }
                 res.json({ stacks });
             } catch (e: any) {
@@ -106,15 +124,19 @@ export default {
 
         // ─── Settings ─────────────────────────────────────────
         router.get("/api/extensions/arcturus/settings", async (_req, res) => {
-            const deployUrl = (await Settings.get("arcturusDeployUrl", SETTINGS_PREFIX)) || "http://arcturus-deploy:8080";
-            const giteaUrl = (await Settings.get("giteaUrl", SETTINGS_PREFIX)) || "http://gitea-tailscale:3000";
-            const tokenSet = !!(await Settings.get("giteaToken", SETTINGS_PREFIX));
-            res.json({ arcturusDeployUrl: deployUrl, giteaUrl, giteaTokenConfigured: tokenSet });
+            res.json({
+                arcturusDeployUrl: await getSetting("arcturusDeployUrl", "http://arcturus-deploy:8080"),
+                giteaUrl: await getSetting("giteaUrl", "http://gitea-tailscale:3000"),
+                giteaAdminTokenConfigured: !!(await getSetting("giteaAdminToken", "")),
+                runnerNetwork: await getSetting("runnerNetwork", "internal_routing"),
+                runnerLabels: await getSetting("runnerLabels",
+                    "ubuntu-latest:docker://docker.gitea.com/runner-images:ubuntu-latest"),
+            });
         });
 
         router.post("/api/extensions/arcturus/settings", async (req, res) => {
             try {
-                const allowed = ["arcturusDeployUrl", "giteaToken", "giteaUrl"];
+                const allowed = ["arcturusDeployUrl", "giteaUrl", "giteaAdminToken", "runnerNetwork", "runnerLabels"];
                 for (const key of allowed) {
                     if (req.body[key] !== undefined) {
                         await Settings.set(key, req.body[key], SETTINGS_PREFIX);
@@ -125,5 +147,22 @@ export default {
                 res.status(500).json({ error: e.message });
             }
         });
+
+        // ─── Validate Gitea token ─────────────────────────────
+        router.post("/api/extensions/arcturus/validate-token", async (req, res) => {
+            try {
+                const giteaUrl = await getSetting("giteaUrl", "http://gitea-tailscale:3000");
+                const token = req.body?.token || await getSetting("giteaAdminToken", "");
+                const valid = await validateToken(giteaUrl, token);
+                res.json({ ok: true, valid });
+            } catch {
+                res.json({ ok: true, valid: false });
+            }
+        });
     },
 };
+
+async function getSetting(key: string, fallback: string): Promise<string> {
+    const val = await Settings.get(key, SETTINGS_PREFIX);
+    return val || fallback;
+}

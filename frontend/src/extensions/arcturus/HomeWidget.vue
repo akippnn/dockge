@@ -1,7 +1,7 @@
 <template>
     <DgCard>
         <h4 class="mb-3">
-            <Layers :size="18" class="me-1" color="#74c2ff" />Arcturus
+            <Layers :size="18" class="me-1 dg-icon-accent" />Arcturus
         </h4>
         <div v-if="!loaded">
             <DgText variant="muted" size="sm">Loading...</DgText>

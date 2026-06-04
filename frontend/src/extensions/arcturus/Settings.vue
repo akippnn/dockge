@@ -1,7 +1,8 @@
 <template>
     <div>
+        <h6>Arcturus Runners</h6>
         <div class="d-flex align-items-center justify-content-between mb-2">
-            <h6>Arcturus Runners</h6>
+            <DgText variant="muted" size="sm">Manage runner containers across organizations.</DgText>
             <DgButton variant="primary" size="sm" @click="showCreate = true">
                 + Create Runner
             </DgButton>
@@ -9,19 +10,16 @@
 
         <!-- Create runner form -->
         <div v-if="showCreate" class="dg-card mb-3">
-            <DgFormGroup label="Organization">
-                <select v-model="newOrg" class="dg-form-input">
-                    <option value="u128">u128</option>
-                    <option value="MProjects">MProjects</option>
-                </select>
+            <DgFormGroup label="Organization name" help-text="Any Gitea org — u128, MProjects, or your own.">
+                <DgFormInput v-model="newOrg" placeholder="e.g. my-org" />
             </DgFormGroup>
             <DgButton :loading="creating" @click="createRunner">Create</DgButton>
-            <DgButton variant="default" @click="showCreate = false">Cancel</DgButton>
+            <DgButton variant="default" @click="showCreate = false" class="ms-2">Cancel</DgButton>
         </div>
 
         <hr class="dg-divider" />
 
-        <DgText v-if="runners.length === 0" variant="muted" size="sm">No runners configured.</DgText>
+        <DgText v-if="runners.length === 0" variant="muted" size="sm">No runners configured. Create one above.</DgText>
 
         <div v-for="r in runners" :key="r.name" class="d-flex align-items-center mb-2">
             <Orb :color="r.state === 'running' ? 'green' : 'red'" :size="8" class="me-2" />
@@ -35,19 +33,40 @@
 
         <hr class="dg-divider" />
 
-        <h6>Arcturus Settings</h6>
-        <DgText variant="muted" size="sm">Configure the Arcturus deploy service and Gitea connection.</DgText>
+        <h6>Gitea Connection</h6>
+        <DgText variant="muted" size="sm">Requires an admin token with <code>sudo:admin</code> scope for runner registration.</DgText>
 
         <form autocomplete="off" @submit.prevent="saveSettings">
-            <DgFormGroup label="Arcturus Deploy URL">
-                <DgFormInput v-model="form.arcturusDeployUrl" placeholder="http://arcturus-deploy:8080" />
-            </DgFormGroup>
-            <DgFormGroup label="Gitea API Token" help-text="Used to check runner build status on Gitea.">
-                <DgFormInput v-model="form.giteaToken" type="password" placeholder="For runner build status" />
-            </DgFormGroup>
             <DgFormGroup label="Gitea URL">
                 <DgFormInput v-model="form.giteaUrl" placeholder="http://gitea-tailscale:3000" />
             </DgFormGroup>
+            <DgFormGroup label="Gitea Admin Token" help-text="Personal access token with sudo:admin scope. Used to generate runner registration tokens via the Gitea REST API.">
+                <DgFormInput v-model="form.giteaAdminToken" type="password" placeholder="Leave empty to use docker exec fallback" />
+            </DgFormGroup>
+            <DgButton type="button" variant="info" size="sm" @click="testToken">
+                {{ testing ? 'Testing...' : 'Test Connection' }}
+            </DgButton>
+            <DgText v-if="tokenTestResult !== null" :variant="tokenTestResult ? 'success' : 'danger'" size="sm" class="ms-2">
+                {{ tokenTestResult ? 'Token valid' : 'Connection failed' }}
+            </DgText>
+
+            <hr class="dg-divider" />
+
+            <h6>Runner Defaults</h6>
+            <DgFormGroup label="Runner Network" help-text="Docker network to attach runner containers to.">
+                <DgFormInput v-model="form.runnerNetwork" placeholder="internal_routing" />
+            </DgFormGroup>
+            <DgFormGroup label="Runner Labels" help-text="Default labels for newly created runners.">
+                <DgFormInput v-model="form.runnerLabels" placeholder="ubuntu-latest:docker://..." />
+            </DgFormGroup>
+
+            <hr class="dg-divider" />
+
+            <h6>Deploy Service</h6>
+            <DgFormGroup label="Arcturus Deploy URL">
+                <DgFormInput v-model="form.arcturusDeployUrl" placeholder="http://arcturus-deploy:8080" />
+            </DgFormGroup>
+
             <DgButton type="submit" :loading="saving">Save Settings</DgButton>
             <DgText v-if="saved" variant="success" class="ms-2">Saved</DgText>
         </form>
@@ -67,10 +86,14 @@ export default {
         return {
             runners: [],
             showCreate: false,
-            newOrg: "u128",
+            newOrg: "",
             creating: false,
-            form: { arcturusDeployUrl: "", giteaToken: "", giteaUrl: "" },
+            form: {
+                arcturusDeployUrl: "", giteaUrl: "", giteaAdminToken: "",
+                runnerNetwork: "", runnerLabels: "",
+            },
             saving: false, saved: false,
+            testing: false, tokenTestResult: null,
         };
     },
     mounted() { this.loadRunners(); this.loadSettings(); },
@@ -83,14 +106,16 @@ export default {
             } catch { /* ignore */ }
         },
         async createRunner() {
+            if (!this.newOrg.trim()) return;
             this.creating = true;
             try {
                 await fetch("/api/extensions/arcturus/runners/create", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ org: this.newOrg }),
+                    body: JSON.stringify({ org: this.newOrg.trim() }),
                 });
                 this.showCreate = false;
+                this.newOrg = "";
                 await this.loadRunners();
             } catch { /* ignore */ }
             this.creating = false;
@@ -107,15 +132,21 @@ export default {
                 const data = await res.json();
                 this.form.arcturusDeployUrl = data.arcturusDeployUrl || "";
                 this.form.giteaUrl = data.giteaUrl || "";
+                this.form.runnerNetwork = data.runnerNetwork || "";
+                this.form.runnerLabels = data.runnerLabels || "";
+                this.giteaTokenConfigured = data.giteaAdminTokenConfigured || false;
             } catch { /* ignore */ }
         },
         async saveSettings() {
             this.saving = true;
             try {
+                const allowed = ["arcturusDeployUrl", "giteaUrl", "giteaAdminToken", "runnerNetwork", "runnerLabels"];
                 const body = {};
-                if (this.form.arcturusDeployUrl) body.arcturusDeployUrl = this.form.arcturusDeployUrl;
-                if (this.form.giteaToken) body.giteaToken = this.form.giteaToken;
-                if (this.form.giteaUrl) body.giteaUrl = this.form.giteaUrl;
+                for (const key of allowed) {
+                    if (this.form[key] !== undefined && this.form[key] !== "") {
+                        body[key] = this.form[key];
+                    }
+                }
                 await fetch("/api/extensions/arcturus/settings", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
@@ -124,6 +155,21 @@ export default {
                 this.saved = true; setTimeout(() => this.saved = false, 3000);
             } catch { /* ignore */ }
             this.saving = false;
+        },
+        async testToken() {
+            this.testing = true;
+            this.tokenTestResult = null;
+            try {
+                const token = this.form.giteaAdminToken || undefined;
+                const res = await fetch("/api/extensions/arcturus/validate-token", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token }),
+                });
+                const data = await res.json();
+                this.tokenTestResult = data.valid;
+            } catch { this.tokenTestResult = false; }
+            this.testing = false;
         },
     },
 };
