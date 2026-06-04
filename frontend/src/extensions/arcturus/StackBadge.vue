@@ -1,13 +1,15 @@
 <template>
-    <span v-if="stack.managedByArcturus === true || stack.managedBy === 'terraform'" class="badge bg-info ms-1" style="font-size: 0.5em; vertical-align: middle;">
-        <Layers :size="10" class="me-1" />Arcturus
-    </span>
+    <DgBadge v-if="stack.managedByArcturus === true || stack.managedBy === 'terraform'" variant="info" title="Managed by Arcturus">
+        <Layers :size="10" /> Arcturus
+    </DgBadge>
 </template>
 
 <script>
 import { Layers } from "lucide-vue-next";
+import DgBadge from "../../components/dg/DgBadge.vue";
+
 export default {
-    components: { Layers },
+    components: { Layers, DgBadge },
     props: { stack: { type: Object, required: true } },
 };
 </script>

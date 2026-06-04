@@ -1,30 +1,35 @@
 <template>
-    <div class="shadow-box big-padding">
+    <DgCard>
         <h4 class="mb-3">
             <Layers :size="18" class="me-1" color="#74c2ff" />Arcturus
         </h4>
-        <div v-if="!loaded" class="text-muted small">Loading...</div>
+        <div v-if="!loaded">
+            <DgText variant="muted" size="sm">Loading...</DgText>
+        </div>
         <div v-else>
             <div class="mb-2 d-flex align-items-center gap-2">
-                <span class="text-muted small">Managed:</span>
+                <DgText variant="muted" size="sm">Managed:</DgText>
                 <strong>{{ managedCount }}</strong>
             </div>
             <div class="mb-2 d-flex align-items-center gap-2">
-                <span class="text-muted small">Runner:</span>
-                <span class="small" :class="anyBusy ? 'text-warning' : 'text-success'">
+                <DgText variant="muted" size="sm">Runner:</DgText>
+                <DgText :variant="anyBusy ? 'warning' : 'success'" size="sm">
                     <Orb :color="anyBusy ? 'yellow' : 'green'" :size="8" class="me-1" />
                     {{ anyBusy ? 'Building' : 'Idle' }}
-                </span>
+                </DgText>
             </div>
         </div>
-    </div>
+    </DgCard>
 </template>
 
 <script>
 import { Layers } from "lucide-vue-next";
 import Orb from "../../components/Orb.vue";
+import DgCard from "../../components/dg/DgCard.vue";
+import DgText from "../../components/dg/DgText.vue";
+
 export default {
-    components: { Layers, Orb },
+    components: { Layers, Orb, DgCard, DgText },
     data() { return { loaded: false, managedCount: 0, anyBusy: false }; },
     async mounted() {
         try {

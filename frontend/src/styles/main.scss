@@ -1,6 +1,7 @@
 @import "vars.scss";
 @import "bootstrap/scss/bootstrap";
 @import "bootstrap-vue-next/dist/bootstrap-vue-next.css";
+@import "extension-kit.scss";
 
 #app {
     font-family: BlinkMacSystemFont, segoe ui, Roboto, helvetica neue, Arial, noto sans, sans-serif, apple color emoji, segoe ui emoji, segoe ui symbol, noto color emoji;
@@ -237,6 +238,31 @@ optgroup {
 .dark {
     background-color: #090c10;
     color: $dark-font-color;
+
+    --bs-body-color: #{$dark-font-color};
+    --bs-body-color-rgb: 177, 184, 192;
+    --bs-secondary-color: #{$dark-font-color3};
+    --bs-secondary-color-rgb: 87, 92, 98;
+    --bs-tertiary-color: #{$dark-font-color3};
+    --bs-tertiary-color-rgb: 87, 92, 98;
+    --bs-body-bg: #{$dark-bg};
+    --bs-body-bg-rgb: 13, 17, 23;
+    --bs-emphasis-color: #{$dark-font-color};
+    --bs-heading-color: #{$dark-font-color};
+    --bs-link-color: #{$primary};
+    --bs-link-hover-color: #{$highlight};
+    --bs-success: #4caf50;
+    --bs-success-rgb: 76, 175, 80;
+    --bs-info: #{$primary};
+    --bs-info-rgb: 116, 194, 255;
+    --bs-warning: #{$warning};
+    --bs-warning-rgb: 248, 163, 6;
+    --bs-danger: #{$danger};
+    --bs-danger-rgb: 220, 53, 69;
+    --bs-light: #{$dark-header-bg};
+    --bs-light-rgb: 22, 27, 34;
+    --bs-dark: #{$dark-bg2};
+    --bs-dark-rgb: 7, 10, 16;
 
     mark, .mark {
         background-color: #b6ad86;

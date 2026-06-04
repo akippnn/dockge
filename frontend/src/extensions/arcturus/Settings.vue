@@ -1,52 +1,58 @@
 <template>
     <div>
         <h6>Arcturus Deployment</h6>
-        <p class="text-muted small">Manages stacks deployed via terraform. Monitors runner build activity.</p>
+        <DgText variant="muted" size="sm">Manages stacks deployed via terraform. Monitors runner build activity.</DgText>
 
         <form autocomplete="off" @submit.prevent="save">
-            <div class="mb-3">
-                <label class="form-label">Arcturus Deploy URL</label>
-                <input v-model="form.arcturusDeployUrl" class="form-control" placeholder="http://arcturus-deploy:8080" />
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Gitea API Token</label>
-                <input v-model="form.giteaToken" class="form-control" type="password" placeholder="For runner build status" />
-                <div class="form-text">Used to check if a runner is busy before deploying.</div>
-            </div>
-            <div class="mb-3">
-                <label class="form-label">Gitea URL</label>
-                <input v-model="form.giteaUrl" class="form-control" placeholder="http://gitea-tailscale:3000" />
-            </div>
-            <button class="btn btn-primary" type="submit" :disabled="saving">
-                <span v-if="saving" class="spinner-border spinner-border-sm me-1"></span>Save
-            </button>
-            <span v-if="saved" class="text-success ms-2">Saved</span>
+            <DgFormGroup label="Arcturus Deploy URL">
+                <DgFormInput v-model="form.arcturusDeployUrl" placeholder="http://arcturus-deploy:8080" />
+            </DgFormGroup>
+            <DgFormGroup label="Gitea API Token" help-text="Used to check if a runner is busy before deploying.">
+                <DgFormInput v-model="form.giteaToken" type="password" placeholder="For runner build status" />
+            </DgFormGroup>
+            <DgFormGroup label="Gitea URL">
+                <DgFormInput v-model="form.giteaUrl" placeholder="http://gitea-tailscale:3000" />
+            </DgFormGroup>
+            <DgButton type="submit" :loading="saving">Save</DgButton>
+            <DgText v-if="saved" variant="success" class="ms-2">Saved</DgText>
         </form>
 
-        <hr />
+        <hr class="dg-divider" />
 
         <h6>Managed Stacks</h6>
-        <p class="text-muted small">Stacks deployed via arcturus/deploy (terraform) appear here.</p>
-        <div v-if="managedStacks.length === 0" class="text-muted small">No managed stacks detected.</div>
+        <DgText variant="muted" size="sm">Stacks deployed via arcturus/deploy (terraform) appear here.</DgText>
+        <div v-if="managedStacks.length === 0">
+            <DgText variant="muted" size="sm">No managed stacks detected.</DgText>
+        </div>
         <div v-for="s in managedStacks" :key="s.name" class="d-flex align-items-center mb-2">
-            <span :class="s.status === 'running' ? 'text-success' : 'text-muted'">●</span>
+            <DgText :variant="s.status === 'running' ? 'success' : 'muted'">●</DgText>
             <span class="ms-2">{{ s.name }}</span>
-            <span class="ms-2 badge bg-secondary">{{ s.status }}</span>
-            <button v-if="!s.deploying" class="btn btn-sm btn-outline-info ms-2" @click="deploy(s.name)">Deploy</button>
+            <DgBadge variant="secondary" class="ms-2">{{ s.status }}</DgBadge>
+            <DgButton v-if="!s.deploying" variant="info" size="sm" class="ms-2" @click="deploy(s.name)">Deploy</DgButton>
         </div>
 
-        <hr />
+        <hr class="dg-divider" />
+
         <h6>Runner Status</h6>
-        <div v-if="runners.length === 0" class="text-muted small">No runner data. Configure a Gitea token above.</div>
+        <div v-if="runners.length === 0">
+            <DgText variant="muted" size="sm">No runner data. Configure a Gitea token above.</DgText>
+        </div>
         <div v-for="r in runners" :key="r.id" class="small mb-1">
-            <span :class="r.busy ? 'text-warning' : 'text-success'">●</span>
+            <DgText :variant="r.busy ? 'warning' : 'success'">●</DgText>
             {{ r.name }} — {{ r.busy ? "Busy" : "Idle" }}
         </div>
     </div>
 </template>
 
 <script>
+import DgButton from "../../components/dg/DgButton.vue";
+import DgText from "../../components/dg/DgText.vue";
+import DgBadge from "../../components/dg/DgBadge.vue";
+import DgFormInput from "../../components/dg/DgFormInput.vue";
+import DgFormGroup from "../../components/dg/DgFormGroup.vue";
+
 export default {
+    components: { DgButton, DgText, DgBadge, DgFormInput, DgFormGroup },
     data() {
         return {
             form: { arcturusDeployUrl: "", giteaToken: "", giteaUrl: "" },
