@@ -7,6 +7,7 @@
                 <span v-if="stack.isProtected" class="badge bg-secondary ms-2" style="font-size: 0.5em; vertical-align: middle;">
                     <font-awesome-icon icon="lock" class="me-1" />PROTECTED
                 </span>
+                <ExtensionSlot slot-name="stack-detail-header" :stack="stack" />
                 <span v-if="$root.agentCount > 1 && endpoint !== ''" class="agent-name">
                     ({{ endpointDisplay }})
                 </span>
@@ -59,6 +60,7 @@
 
                 <button v-if="isEditMode && !isAdd" class="btn btn-normal" :disabled="processing" @click="discardStack">{{ $t("discardStack") }}</button>
                 <button v-if="!isEditMode" class="btn btn-danger" :disabled="processing || stack.isProtected" @click="showDeleteDialog = !showDeleteDialog">
+                <ExtensionSlot slot-name="stack-detail-actions" :stack="stack" />
                     <font-awesome-icon icon="trash" class="me-1" />
                     {{ $t("deleteStack") }}
                 </button>

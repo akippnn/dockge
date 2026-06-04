@@ -92,6 +92,10 @@ const routes = [
                                 path: "webhook",
                                 component: Webhook,
                             },
+                            {
+                                path: "extensions",
+                                component: () => import("./pages/Extensions.vue"),
+                            },
                         ]
                     },
                 ]

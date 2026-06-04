@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { MainRouter } from "./routers/main-router";
 import { WebhookRouter } from "./routers/webhook-router";
+import { loadExtensions, getExtensions, isEnabled } from "./extensions/loader";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -199,11 +200,6 @@ export class DockgeServer {
             enableBrotli: true,
         }));
 
-        // Universal Route Handler, must be at the end of all express routes.
-        this.app.get("*", async (_request, response) => {
-            response.send(this.indexHTML);
-        });
-
         // Allow all CORS origins in development
         let cors = undefined;
         if (isDev) {
@@ -364,6 +360,9 @@ export class DockgeServer {
             process.exit(1);
         }
 
+        // Load extensions
+        await loadExtensions();
+
         // First time setup if needed
         let jwtSecretBean = await R.findOne("setting", " `key` = ? ", [
             "jwtSecret",
@@ -406,6 +405,48 @@ export class DockgeServer {
             });
 
             checkVersion.startInterval();
+        });
+
+        // Extension management routes (always available)
+        const extMgmtRouter = express.Router();
+        extMgmtRouter.get("/api/extensions/list", async (_req, res) => {
+            const manifests = getExtensions();
+            const result = [];
+            for (const [name, ext] of manifests) {
+                const enabled = await isEnabled(name);
+                result.push({ ...ext.manifest, enabled });
+            }
+            res.json(result);
+        });
+        extMgmtRouter.post("/api/extensions/toggle", async (req, res) => {
+            const { setEnabled } = await import("./extensions/loader");
+            const { name, enabled } = req.body;
+            if (!name) { res.status(400).json({ error: "Missing name" }); return; }
+            await setEnabled(name, enabled);
+            res.json({ ok: true });
+        });
+        this.app.use(extMgmtRouter);
+
+        // Extension backend routes (only for enabled extensions)
+        for (const [extName, ext] of getExtensions()) {
+            const enabled = await isEnabled(extName);
+            if (enabled && ext.backend?.routes) {
+                const extRouter = express.Router();
+                ext.backend.routes(extRouter);
+                this.app.use(extRouter);
+                log.info("extensions", `Registered routes for extension: ${ext.manifest.name}`);
+            }
+        }
+
+        // Reload endpoint — triggers graceful restart
+        this.app.post("/api/reload", (_req, res) => {
+            res.json({ ok: true, msg: "Reloading..." });
+            setTimeout(() => process.exit(0), 500);
+        });
+
+        // Universal route handler — must be after all other routes
+        this.app.get("*", async (_request, response) => {
+            response.send(this.indexHTML);
         });
 
         gracefulShutdown(this.httpServer, {
@@ -606,7 +647,13 @@ export class DockgeServer {
                 let map : Map<string, object> = new Map();
 
                 for (let [ stackName, stack ] of stackList) {
-                    map.set(stackName, stack.toSimpleJSON(dockgeSocket.endpoint));
+                    let json = stack.toSimpleJSON(dockgeSocket.endpoint);
+                    for (const [extName, ext] of getExtensions()) {
+                        if (ext.backend?.augmentStack && await isEnabled(extName)) {
+                            json = ext.backend.augmentStack(json);
+                        }
+                    }
+                    map.set(stackName, json);
                 }
 
                 log.debug("server", "Send stack list to user: " + dockgeSocket.id + " (" + dockgeSocket.endpoint + ")");
