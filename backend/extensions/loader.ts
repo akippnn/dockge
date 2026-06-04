@@ -23,10 +23,11 @@ export interface DockgeExtension {
     onStackAction?: (action: string, stackName: string, success: boolean) => void;
 }
 
-const loadedExtensions: Map<string, { manifest: ExtensionManifest; backend: DockgeExtension | null }> = new Map();
+const extensionInfo: Map<string, { manifest: ExtensionManifest; backendPath: string | null }> = new Map();
+const extensionBackends: Map<string, DockgeExtension> = new Map();
 
-export function getExtensions(): Map<string, { manifest: ExtensionManifest; backend: DockgeExtension | null }> {
-    return loadedExtensions;
+export function getExtensions(): Map<string, { manifest: ExtensionManifest; backendPath: string | null }> {
+    return extensionInfo;
 }
 
 export async function isEnabled(name: string): Promise<boolean> {
@@ -38,17 +39,32 @@ export async function setEnabled(name: string, enabled: boolean): Promise<void> 
     await Settings.set(`ext_enabled_${name}`, enabled ? "true" : "false", "extensions");
 }
 
+export async function getBackend(name: string): Promise<DockgeExtension | null> {
+    if (extensionBackends.has(name)) return extensionBackends.get(name) || null;
+    const info = extensionInfo.get(name);
+    if (!info?.backendPath) return null;
+    try {
+        const extModule = await import(info.backendPath);
+        const backend = extModule.default || extModule;
+        extensionBackends.set(name, backend);
+        return backend;
+    } catch (e: any) {
+        log.warn("extensions", `Failed to import backend for ${name}: ${e.message}`);
+        return null;
+    }
+}
+
 export function notifyExtensions(action: string, stackName: string, success: boolean): void {
-    for (const [_, ext] of loadedExtensions) {
-        if (ext.backend?.onStackAction) {
-            try { ext.backend.onStackAction(action, stackName, success); } catch { /* ignore */ }
+    for (const [name, backend] of extensionBackends) {
+        if (backend.onStackAction) {
+            try { backend.onStackAction(action, stackName, success); } catch { /* ignore */ }
         }
     }
 }
 
 export function getManifests(): ExtensionManifest[] {
     const result: ExtensionManifest[] = [];
-    for (const [_, ext] of loadedExtensions) {
+    for (const [_, ext] of extensionInfo) {
         result.push(ext.manifest);
     }
     return result;
@@ -77,14 +93,9 @@ export async function loadExtensions(): Promise<void> {
         try {
             const manifest: ExtensionManifest = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
             const backendPath = path.join(extDir, dir.name, "backend", "index.ts");
+            const bp = fs.existsSync(backendPath) ? backendPath : null;
 
-            let backend: DockgeExtension | null = null;
-            if (fs.existsSync(backendPath)) {
-                const extModule = await import(backendPath);
-                backend = extModule.default || extModule;
-            }
-
-            loadedExtensions.set(dir.name, { manifest, backend });
+            extensionInfo.set(dir.name, { manifest, backendPath: bp });
             log.info("extensions", `Loaded extension: ${manifest.name} v${manifest.version}`);
         } catch (e: any) {
             log.warn("extensions", `Failed to load extension ${dir.name}: ${e.message}`);

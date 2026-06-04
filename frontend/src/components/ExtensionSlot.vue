@@ -5,23 +5,18 @@
 </template>
 
 <script>
-import arcturusStackBadge from "../extensions/arcturus/StackBadge.vue";
-import arcturusDeployButton from "../extensions/arcturus/DeployButton.vue";
-import arcturusSettings from "../extensions/arcturus/Settings.vue";
-import arcturusNavLink from "../extensions/arcturus/NavLink.vue";
-import arcturusHomeWidget from "../extensions/arcturus/HomeWidget.vue";
-import discordSettings from "../../../extensions/discord/frontend/components/DiscordSettings.vue";
+import { defineAsyncComponent } from "vue";
 
-const extComponentMap = {
+const componentLoaders = {
     arcturus: {
-        "stack-detail-header": arcturusStackBadge,
-        "stack-detail-actions": arcturusDeployButton,
-        "settings-pages": arcturusSettings,
-        "header-nav": arcturusNavLink,
-        "home-overview": arcturusHomeWidget,
+        "stack-detail-header": () => import("../extensions/arcturus/StackBadge.vue"),
+        "stack-detail-actions": () => import("../extensions/arcturus/DeployButton.vue"),
+        "settings-pages": () => import("../extensions/arcturus/Settings.vue"),
+        "header-nav": () => import("../extensions/arcturus/NavLink.vue"),
+        "home-overview": () => import("../extensions/arcturus/HomeWidget.vue"),
     },
     discord: {
-        "settings-pages": discordSettings,
+        "settings-pages": () => import("../../../extensions/discord/frontend/components/DiscordSettings.vue"),
     },
 };
 
@@ -49,12 +44,12 @@ export default {
     computed: {
         matching() {
             const list = [];
-            for (const [extName, slots] of Object.entries(extComponentMap)) {
+            for (const [extName, slots] of Object.entries(componentLoaders)) {
                 const extKey = extName.toLowerCase();
                 if (this.loaded && !this.enabledExtensions.has(extKey)) continue;
                 if (this.extensionName && this.extensionName !== extKey) continue;
-                const comp = slots[this.slotName];
-                if (comp) list.push({ name: extName, component: comp });
+                const loader = slots[this.slotName];
+                if (loader) list.push({ name: extName, component: defineAsyncComponent(loader) });
             }
             return list;
         },

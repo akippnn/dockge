@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { MainRouter } from "./routers/main-router";
 import { WebhookRouter } from "./routers/webhook-router";
-import { loadExtensions, getExtensions, isEnabled } from "./extensions/loader";
+import { loadExtensions, getExtensions, isEnabled, getBackend } from "./extensions/loader";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -430,11 +430,14 @@ export class DockgeServer {
         // Extension backend routes (only for enabled extensions)
         for (const [extName, ext] of getExtensions()) {
             const enabled = await isEnabled(extName);
-            if (enabled && ext.backend?.routes) {
-                const extRouter = express.Router();
-                ext.backend.routes(extRouter);
-                this.app.use(extRouter);
-                log.info("extensions", `Registered routes for extension: ${ext.manifest.name}`);
+            if (enabled) {
+                const backend = await getBackend(extName);
+                if (backend?.routes) {
+                    const extRouter = express.Router();
+                    backend.routes(extRouter);
+                    this.app.use(extRouter);
+                    log.info("extensions", `Registered routes for extension: ${ext.manifest.name}`);
+                }
             }
         }
 
@@ -649,8 +652,11 @@ export class DockgeServer {
                 for (let [ stackName, stack ] of stackList) {
                     let json = stack.toSimpleJSON(dockgeSocket.endpoint);
                     for (const [extName, ext] of getExtensions()) {
-                        if (ext.backend?.augmentStack && await isEnabled(extName)) {
-                            json = ext.backend.augmentStack(json);
+                        if (await isEnabled(extName)) {
+                            const backend = await getBackend(extName);
+                            if (backend?.augmentStack) {
+                                json = backend.augmentStack(json);
+                            }
                         }
                     }
                     map.set(stackName, json);
