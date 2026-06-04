@@ -5,8 +5,11 @@ COPY package.json package-lock.json ./
 RUN npm ci --ignore-scripts
 COPY frontend/ ./frontend/
 COPY common/ ./common/
+COPY extensions/ ./extensions/
+# Extension frontend components are imported by ExtensionSlot.vue and compiled into the bundle
 RUN npx vite build --config ./frontend/vite.config.ts
 
 FROM louislam/dockge:latest
 COPY backend/ /app/backend/
+COPY extensions/ /app/extensions/
 COPY --from=builder /app/frontend-dist/ /app/frontend-dist/

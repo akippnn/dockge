@@ -89,8 +89,8 @@ export default {
                 about: {
                     title: this.$t("About"),
                 },
-                webhook: {
-                    title: "Webhook",
+                extensions: {
+                    title: "Extensions",
                 },
             };
         },

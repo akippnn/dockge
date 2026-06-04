@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { MainRouter } from "./routers/main-router";
 import { WebhookRouter } from "./routers/webhook-router";
+import { loadExtensions, getExtensions } from "./extensions/loader";
 import * as fs from "node:fs";
 import { PackageJson } from "type-fest";
 import { Database } from "./database";
@@ -199,11 +200,6 @@ export class DockgeServer {
             enableBrotli: true,
         }));
 
-        // Universal Route Handler, must be at the end of all express routes.
-        this.app.get("*", async (_request, response) => {
-            response.send(this.indexHTML);
-        });
-
         // Allow all CORS origins in development
         let cors = undefined;
         if (isDev) {
@@ -364,6 +360,9 @@ export class DockgeServer {
             process.exit(1);
         }
 
+        // Load extensions
+        await loadExtensions();
+
         // First time setup if needed
         let jwtSecretBean = await R.findOne("setting", " `key` = ? ", [
             "jwtSecret",
@@ -406,6 +405,21 @@ export class DockgeServer {
             });
 
             checkVersion.startInterval();
+        });
+
+        // Extension routes and universal handler must be bound after extensions are loaded
+        for (const [_, ext] of getExtensions()) {
+            if (ext.routes) {
+                const extRouter = express.Router();
+                ext.routes(extRouter);
+                this.app.use(extRouter);
+                log.info("extensions", `Registered routes for extension: ${ext.name}`);
+            }
+        }
+
+        // Universal route handler — must be after all other routes
+        this.app.get("*", async (_request, response) => {
+            response.send(this.indexHTML);
         });
 
         gracefulShutdown(this.httpServer, {
@@ -606,7 +620,13 @@ export class DockgeServer {
                 let map : Map<string, object> = new Map();
 
                 for (let [ stackName, stack ] of stackList) {
-                    map.set(stackName, stack.toSimpleJSON(dockgeSocket.endpoint));
+                    let json = stack.toSimpleJSON(dockgeSocket.endpoint);
+                    for (const [_, ext] of getExtensions()) {
+                        if (ext.augmentStack) {
+                            json = ext.augmentStack(json);
+                        }
+                    }
+                    map.set(stackName, json);
                 }
 
                 log.debug("server", "Send stack list to user: " + dockgeSocket.id + " (" + dockgeSocket.endpoint + ")");

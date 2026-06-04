@@ -1,0 +1,5 @@
+{
+    "name": "Arcturus",
+    "description": "Manages stacks deployed via arcturus/deploy. Shows deployment status, runner build activity, and provides deploy/destroy controls.",
+    "version": "1.0.0"
+}
