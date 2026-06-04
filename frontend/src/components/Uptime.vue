@@ -1,5 +1,5 @@
 <template>
-    <span :class="['uptime', `uptime--${statusClass}`]">
+    <span :class="['dg-pill', `dg-pill--${statusClass}`]">
         <Orb :color="orbColor" :size="10" :title="statusName" />
         <span v-if="showLabel" class="uptime__label">{{ statusName }}</span>
     </span>
@@ -28,20 +28,5 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-@import "../styles/vars";
-
-.uptime {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 50rem;
-    font-size: 0.75rem;
-    line-height: 1.4;
-}
-.uptime--running { background: rgba(#4caf50, 0.15); color: #4caf50; }
-.uptime--exited  { background: rgba($danger, 0.15); color: $danger; }
-.uptime--inactive { background: rgba($dark-font-color3, 0.2); color: $dark-font-color3; }
-.uptime--unknown { background: rgba($dark-font-color3, 0.2); color: $dark-font-color3; }
 .uptime__label { font-weight: 500; }
 </style>

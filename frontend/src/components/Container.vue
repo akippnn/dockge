@@ -7,10 +7,10 @@
                     <span class="me-1">{{ imageName }}:</span><span class="tag">{{ imageTag }}</span>
                 </div>
                 <div v-if="!isEditMode">
-                    <span class="badge me-1" :class="bgStyle">{{ status }}</span>
+                    <DgBadge :variant="statusVariant" class="me-1">{{ status }}</DgBadge>
 
                     <a v-for="port in (ports ?? envsubstService.ports)" :key="port" :href="parsePort(port).url" target="_blank">
-                        <span class="badge me-1 bg-secondary">{{ parsePort(port).display }}</span>
+                        <DgBadge variant="secondary" class="me-1">{{ parsePort(port).display }}</DgBadge>
                     </a>
                 </div>
             </div>
@@ -194,11 +194,13 @@ import { defineComponent } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { parseDockerPort } from "../../../common/util-common";
 import DockerStat from "./DockerStat.vue";
+import DgBadge from "./dg/DgBadge.vue";
 
 export default defineComponent({
     components: {
         FontAwesomeIcon,
-        DockerStat
+        DockerStat,
+        DgBadge,
     },
     props: {
         name: {
@@ -243,13 +245,13 @@ export default defineComponent({
             return list;
         },
 
-        bgStyle() {
+        statusVariant() {
             if (this.status === "running" || this.status === "healthy") {
-                return "bg-primary";
+                return "primary";
             } else if (this.status === "unhealthy") {
-                return "bg-danger";
+                return "danger";
             } else {
-                return "bg-secondary";
+                return "secondary";
             }
         },
 

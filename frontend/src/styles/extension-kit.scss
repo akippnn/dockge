@@ -14,41 +14,34 @@ $dg-transition: all 0.15s ease-in-out;
     border-color: $dark-border-color;
 }
 
-.dg-badge {
+/* ═══════════════════════════════════════════════════════════════
+   Dockge Pill Standard — single unified badge/pill component
+   ═══════════════════════════════════════════════════════════════ */
+.dg-pill {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     padding: 3px 10px;
     border-radius: 50rem;
-    font-size: 0.75em;
-    font-weight: 600;
-    background: $dark-border-color;
-    color: $dark-font-color;
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.4;
 }
-.dg-badge--primary {
-    background: $primary;
-    color: $dark-font-color2;
-}
-.dg-badge--success {
-    background: #4caf50;
-    color: #fff;
-}
-.dg-badge--warning {
-    background: $warning;
-    color: $dark-font-color2;
-}
-.dg-badge--danger {
-    background: $danger;
-    color: #fff;
-}
-.dg-badge--info {
-    background: $primary;
-    color: $dark-font-color2;
-}
-.dg-badge--secondary {
-    background: $dark-font-color3;
-    color: $dark-font-color;
-}
+
+/* Status variants (tinted background, matching text color) */
+.dg-pill--running   { background: rgba(#4caf50, 0.15); color: #4caf50; }
+.dg-pill--exited    { background: rgba($danger, 0.15);  color: $danger; }
+.dg-pill--inactive  { background: rgba($dark-font-color3, 0.15); color: $dark-font-color3; }
+.dg-pill--unknown   { background: rgba($dark-font-color3, 0.15); color: $dark-font-color3; }
+
+/* Label variants (tinted background, matching text color) */
+.dg-pill--primary   { background: rgba($primary, 0.15); color: $primary; }
+.dg-pill--success   { background: rgba(#4caf50, 0.15); color: #4caf50; }
+.dg-pill--warning   { background: rgba($warning, 0.15); color: $warning; }
+.dg-pill--danger    { background: rgba($danger, 0.15);  color: $danger; }
+.dg-pill--info      { background: rgba($primary, 0.15);  color: $primary; }
+.dg-pill--secondary { background: rgba($dark-font-color3, 0.15); color: $dark-font-color3; }
+.dg-pill--default   { background: rgba($dark-font-color, 0.10); color: $dark-font-color; }
 
 .dg-text {
     color: $dark-font-color;

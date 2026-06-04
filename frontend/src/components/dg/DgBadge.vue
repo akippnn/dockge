@@ -1,5 +1,5 @@
 <template>
-    <span :class="['dg-badge', variantClass]" :title="title">
+    <span :class="['dg-pill', variantClass]" :title="title">
         <slot />
     </span>
 </template>
@@ -12,7 +12,7 @@ export default {
         title: { type: String, default: "" },
     },
     computed: {
-        variantClass() { return this.variant === "default" ? "" : `dg-badge--${this.variant}`; },
+        variantClass() { return this.variant === "default" ? "" : `dg-pill--${this.variant}`; },
     },
 };
 </script>

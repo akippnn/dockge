@@ -38,19 +38,19 @@
                 <div class="col-md-5">
                     <!-- Agent List -->
                     <div class="shadow-box big-padding">
-                        <h4 class="mb-3">{{ $tc("dockgeAgent", 2) }} <span class="badge bg-warning" style="font-size: 12px;">beta</span></h4>
+                        <h4 class="mb-3">{{ $tc("dockgeAgent", 2) }} <DgBadge variant="warning" class="ms-1">beta</DgBadge></h4>
 
                         <div v-for="(agentItem, endpoint) in $root.agentList" :key="endpoint" class="mb-3 agent">
                             <!-- Agent Status -->
                             <template v-if="$root.agentStatusList[endpoint]">
-                                <span v-if="$root.agentStatusList[endpoint] === 'online'" class="badge bg-primary me-2">{{ $t("agentOnline") }}</span>
-                                <span v-else-if="$root.agentStatusList[endpoint] === 'offline'" class="badge bg-danger me-2">{{ $t("agentOffline") }}</span>
-                                <span v-else class="badge bg-secondary me-2">{{ $t($root.agentStatusList[endpoint]) }}</span>
+                                <DgBadge v-if="$root.agentStatusList[endpoint] === 'online'" variant="primary" class="me-2">{{ $t("agentOnline") }}</DgBadge>
+                                <DgBadge v-else-if="$root.agentStatusList[endpoint] === 'offline'" variant="danger" class="me-2">{{ $t("agentOffline") }}</DgBadge>
+                                <DgBadge v-else variant="secondary" class="me-2">{{ $t($root.agentStatusList[endpoint]) }}</DgBadge>
                             </template>
 
                             <!-- Agent Display Name -->
                             <template v-if="$root.agentStatusList[endpoint]">
-                                <span v-if="endpoint === '' && agentItem.name === ''" class="badge bg-secondary me-2">Current</span>
+                                <DgBadge v-if="endpoint === '' && agentItem.name === ''" variant="secondary" class="me-2">Current</DgBadge>
                                 <span v-else-if="agentItem.name === ''" :href="agentItem.url" class="me-2">{{ endpoint }}</span>
                                 <span v-else :href="agentItem.url" class="me-2">{{ agentItem.name }}</span>
                             </template>
@@ -118,10 +118,11 @@
 
 <script>
 import { statusNameShort } from "../../../common/util-common";
+import DgBadge from "../components/dg/DgBadge.vue";
 
 export default {
     components: {
-
+        DgBadge,
     },
     props: {
         calculatedHeight: {

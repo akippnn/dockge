@@ -15,8 +15,8 @@
                     >
                         <span class="me-2" :class="statusClass(ext)">{{ statusIcon(ext) }}</span>
                         <span class="flex-grow-1">{{ ext.name }} <small class="text-muted">v{{ ext.version }}</small></span>
-                        <span v-if="ext.enabled" class="badge bg-success ms-2">Enabled</span>
-                        <span v-else class="badge bg-secondary ms-2">Disabled</span>
+                        <DgBadge v-if="ext.enabled" variant="success" class="ms-2">Enabled</DgBadge>
+                        <DgBadge v-else variant="secondary" class="ms-2">Disabled</DgBadge>
                     </button>
                 </div>
             </div>
@@ -71,7 +71,10 @@
 </template>
 
 <script>
+import DgBadge from "../components/dg/DgBadge.vue";
+
 export default {
+    components: { DgBadge },
     data() {
         return {
             extensions: [],

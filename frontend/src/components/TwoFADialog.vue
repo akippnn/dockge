@@ -6,8 +6,8 @@
                     <div class="modal-header">
                         <h5 class="modal-title">
                             {{ $t("Setup 2FA") }}
-                            <span v-if="twoFAStatus == true" class="badge bg-primary">{{ $t("Active") }}</span>
-                            <span v-if="twoFAStatus == false" class="badge bg-primary">{{ $t("Inactive") }}</span>
+                            <DgBadge v-if="twoFAStatus == true" variant="success">{{ $t("Active") }}</DgBadge>
+                            <DgBadge v-if="twoFAStatus == false" variant="secondary">{{ $t("Inactive") }}</DgBadge>
                         </h5>
                         <button :disabled="processing" type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" />
                     </div>
@@ -77,12 +77,14 @@ import { Modal } from "bootstrap";
 import Confirm from "./Confirm.vue";
 import VueQrcode from "vue-qrcode";
 import { useToast } from "vue-toastification";
+import DgBadge from "./dg/DgBadge.vue";
 const toast = useToast();
 
 export default {
     components: {
         Confirm,
         VueQrcode,
+        DgBadge,
     },
     props: {},
     data() {

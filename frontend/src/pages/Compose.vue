@@ -4,9 +4,9 @@
             <h1 v-if="isAdd" class="mb-3">{{ $t("compose") }}</h1>
             <h1 v-else class="mb-3">
                 <Uptime :stack="globalStack" :show-label="true" /> {{ stack.name }}
-                <span v-if="stack.isProtected" class="badge bg-secondary ms-2" style="font-size: 0.5em; vertical-align: middle;">
+                <DgBadge v-if="stack.isProtected" variant="secondary" class="ms-2">
                     <font-awesome-icon icon="lock" class="me-1" />PROTECTED
-                </span>
+                </DgBadge>
                 <ExtensionSlot slot-name="stack-detail-header" :stack="stack" />
                 <span v-if="$root.agentCount > 1 && endpoint !== ''" class="agent-name">
                     ({{ endpointDisplay }})
@@ -69,7 +69,7 @@
             <!-- URLs -->
             <div v-if="urls.length > 0" class="mb-3">
                 <a v-for="(urlItem, index) in urls" :key="index" target="_blank" :href="urlItem.url">
-                    <span class="badge bg-secondary me-2">{{ urlItem.display }}</span>
+                    <DgBadge variant="secondary" class="me-2">{{ urlItem.display }}</DgBadge>
                 </a>
             </div>
 
@@ -270,6 +270,7 @@ import {
 } from "../../../common/util-common";
 import { BModal } from "bootstrap-vue-next";
 import NetworkInput from "../components/NetworkInput.vue";
+import DgBadge from "../components/dg/DgBadge.vue";
 import dotenv from "dotenv";
 import { ref } from "vue";
 
@@ -294,6 +295,7 @@ export default {
         FontAwesomeIcon,
         CodeMirror,
         BModal,
+        DgBadge,
     },
     beforeRouteUpdate(to, from, next) {
         this.exitConfirm(next);
