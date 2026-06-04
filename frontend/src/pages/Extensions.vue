@@ -63,7 +63,7 @@
                     </div>
 
                     <!-- Extension custom settings component -->
-                    <ExtensionSlot v-if="detail.enabled" slot-name="settings-pages" />
+                    <ExtensionSlot v-if="detail.enabled" slot-name="settings-pages" :extension-name="selected" />
                 </div>
             </div>
         </div>
