@@ -1,7 +1,8 @@
 import { Router } from "express";
-import { probeRunners } from "./runner-probe";
-import { triggerDeploy } from "./deploy-client";
 import { Settings } from "/app/backend/settings";
+import * as runnerManager from "./runner-manager";
+
+const SETTINGS_PREFIX = "extension-arcturus";
 
 export default {
     name: "arcturus",
@@ -17,29 +18,54 @@ export default {
     },
 
     routes(router: Router) {
+        // ─── Runner lifecycle ─────────────────────────────────
+        router.post("/api/extensions/arcturus/runners/create", async (req, res) => {
+            try {
+                const { org } = req.body || {};
+                if (!org || !["u128", "MProjects"].includes(org)) {
+                    return res.status(400).json({ ok: false, msg: "org must be 'u128' or 'MProjects'" });
+                }
+                const runner = await runnerManager.createRunner(org);
+                res.json({ ok: true, ...runner });
+            } catch (e: any) {
+                res.status(500).json({ ok: false, msg: e.message });
+            }
+        });
+
+        router.delete("/api/extensions/arcturus/runners/:name", async (req, res) => {
+            try {
+                await runnerManager.deleteRunner(req.params.name);
+                res.json({ ok: true });
+            } catch (e: any) {
+                res.status(500).json({ ok: false, msg: e.message });
+            }
+        });
+
         router.get("/api/extensions/arcturus/runners", async (_req, res) => {
             try {
-                const giteaUrl = await Settings.get("giteaUrl") || "http://gitea-tailscale:3000";
-                const giteaToken = await Settings.get("giteaToken") || "";
-                const runners = await probeRunners(giteaUrl, giteaToken);
-                res.json({ runners, anyBusy: runners.some((r: any) => r.busy) });
+                const runners = await runnerManager.listRunners();
+                const anyBusy = runners.some((r: any) => r.state === "running" && r.status?.includes("busy"));
+                res.json({ ok: true, runners, anyBusy });
             } catch (e: any) {
-                res.status(500).json({ error: e.message });
+                res.status(500).json({ ok: false, msg: e.message });
             }
         });
 
+        // ─── Deploy ───────────────────────────────────────────
         router.post("/api/extensions/arcturus/deploy", async (req, res) => {
             try {
-                const deployUrl = await Settings.get("arcturusDeployUrl") || "http://arcturus-deploy:8080";
-                const { stack, action = "apply", domain = "" } = req.body;
-                if (!stack) { res.status(400).json({ error: "Missing 'stack'" }); return; }
-                const result = await triggerDeploy(deployUrl, stack, action, domain);
-                res.json(result);
+                const deployUrl = (await Settings.get("arcturusDeployUrl", SETTINGS_PREFIX)) || "http://arcturus-deploy:8080";
+                const { stack } = req.body || {};
+                if (!stack) return res.status(400).json({ ok: false, msg: "stack is required" });
+                const response = await fetch(`${deployUrl}/deploy?stack=${encodeURIComponent(stack)}`, { method: "POST" });
+                const data = await response.json();
+                res.json(data);
             } catch (e: any) {
-                res.status(500).json({ error: e.message });
+                res.status(500).json({ ok: false, msg: e.message });
             }
         });
 
+        // ─── Stacks ───────────────────────────────────────────
         router.get("/api/extensions/arcturus/stacks", async (_req, res) => {
             try {
                 const stacksDir = process.env.DOCKGE_STACKS_DIR || "/home/akippnn/stacks";
@@ -78,10 +104,11 @@ export default {
             }
         });
 
+        // ─── Settings ─────────────────────────────────────────
         router.get("/api/extensions/arcturus/settings", async (_req, res) => {
-            const deployUrl = await Settings.get("arcturusDeployUrl") || "http://arcturus-deploy:8080";
-            const giteaUrl = await Settings.get("giteaUrl") || "http://gitea-tailscale:3000";
-            const tokenSet = !!(await Settings.get("giteaToken"));
+            const deployUrl = (await Settings.get("arcturusDeployUrl", SETTINGS_PREFIX)) || "http://arcturus-deploy:8080";
+            const giteaUrl = (await Settings.get("giteaUrl", SETTINGS_PREFIX)) || "http://gitea-tailscale:3000";
+            const tokenSet = !!(await Settings.get("giteaToken", SETTINGS_PREFIX));
             res.json({ arcturusDeployUrl: deployUrl, giteaUrl, giteaTokenConfigured: tokenSet });
         });
 
@@ -90,7 +117,7 @@ export default {
                 const allowed = ["arcturusDeployUrl", "giteaToken", "giteaUrl"];
                 for (const key of allowed) {
                     if (req.body[key] !== undefined) {
-                        await Settings.set(key, req.body[key], "extension-arcturus");
+                        await Settings.set(key, req.body[key], SETTINGS_PREFIX);
                     }
                 }
                 res.json({ ok: true });

@@ -1,68 +1,107 @@
 <template>
     <div>
-        <h6>Arcturus Deployment</h6>
-        <DgText variant="muted" size="sm">Manages stacks deployed via terraform. Monitors runner build activity.</DgText>
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <h6>Arcturus Runners</h6>
+            <DgButton variant="primary" size="sm" @click="showCreate = true">
+                + Create Runner
+            </DgButton>
+        </div>
 
-        <form autocomplete="off" @submit.prevent="save">
+        <!-- Create runner form -->
+        <div v-if="showCreate" class="dg-card mb-3">
+            <DgFormGroup label="Organization">
+                <select v-model="newOrg" class="dg-form-input">
+                    <option value="u128">u128</option>
+                    <option value="MProjects">MProjects</option>
+                </select>
+            </DgFormGroup>
+            <DgButton :loading="creating" @click="createRunner">Create</DgButton>
+            <DgButton variant="default" @click="showCreate = false">Cancel</DgButton>
+        </div>
+
+        <hr class="dg-divider" />
+
+        <DgText v-if="runners.length === 0" variant="muted" size="sm">No runners configured.</DgText>
+
+        <div v-for="r in runners" :key="r.name" class="d-flex align-items-center mb-2">
+            <Orb :color="r.state === 'running' ? 'green' : 'red'" :size="8" class="me-2" />
+            <div class="flex-grow-1">
+                <strong class="small">{{ r.label }}</strong>
+                <DgText variant="muted" size="sm" class="ms-1">({{ r.org }})</DgText>
+                <DgText variant="muted" size="sm" class="ms-1">{{ r.status }}</DgText>
+            </div>
+            <DgButton variant="danger" size="sm" @click="deleteRunner(r.name)">Remove</DgButton>
+        </div>
+
+        <hr class="dg-divider" />
+
+        <h6>Arcturus Settings</h6>
+        <DgText variant="muted" size="sm">Configure the Arcturus deploy service and Gitea connection.</DgText>
+
+        <form autocomplete="off" @submit.prevent="saveSettings">
             <DgFormGroup label="Arcturus Deploy URL">
                 <DgFormInput v-model="form.arcturusDeployUrl" placeholder="http://arcturus-deploy:8080" />
             </DgFormGroup>
-            <DgFormGroup label="Gitea API Token" help-text="Used to check if a runner is busy before deploying.">
+            <DgFormGroup label="Gitea API Token" help-text="Used to check runner build status on Gitea.">
                 <DgFormInput v-model="form.giteaToken" type="password" placeholder="For runner build status" />
             </DgFormGroup>
             <DgFormGroup label="Gitea URL">
                 <DgFormInput v-model="form.giteaUrl" placeholder="http://gitea-tailscale:3000" />
             </DgFormGroup>
-            <DgButton type="submit" :loading="saving">Save</DgButton>
+            <DgButton type="submit" :loading="saving">Save Settings</DgButton>
             <DgText v-if="saved" variant="success" class="ms-2">Saved</DgText>
         </form>
-
-        <hr class="dg-divider" />
-
-        <h6>Managed Stacks</h6>
-        <DgText variant="muted" size="sm">Stacks deployed via arcturus/deploy (terraform) appear here.</DgText>
-        <div v-if="managedStacks.length === 0">
-            <DgText variant="muted" size="sm">No managed stacks detected.</DgText>
-        </div>
-        <div v-for="s in managedStacks" :key="s.name" class="d-flex align-items-center mb-2">
-            <DgText :variant="s.status === 'running' ? 'success' : 'muted'">●</DgText>
-            <span class="ms-2">{{ s.name }}</span>
-            <DgBadge variant="secondary" class="ms-2">{{ s.status }}</DgBadge>
-            <DgButton v-if="!s.deploying" variant="info" size="sm" class="ms-2" @click="deploy(s.name)">Deploy</DgButton>
-        </div>
-
-        <hr class="dg-divider" />
-
-        <h6>Runner Status</h6>
-        <div v-if="runners.length === 0">
-            <DgText variant="muted" size="sm">No runner data. Configure a Gitea token above.</DgText>
-        </div>
-        <div v-for="r in runners" :key="r.id" class="small mb-1">
-            <DgText :variant="r.busy ? 'warning' : 'success'">●</DgText>
-            {{ r.name }} — {{ r.busy ? "Busy" : "Idle" }}
-        </div>
     </div>
 </template>
 
 <script>
-import DgButton from "../../components/dg/DgButton.vue";
-import DgText from "../../components/dg/DgText.vue";
-import DgBadge from "../../components/dg/DgBadge.vue";
-import DgFormInput from "../../components/dg/DgFormInput.vue";
-import DgFormGroup from "../../components/dg/DgFormGroup.vue";
+import Orb from "../components/Orb.vue";
+import DgButton from "../components/dg/DgButton.vue";
+import DgText from "../components/dg/DgText.vue";
+import DgFormInput from "../components/dg/DgFormInput.vue";
+import DgFormGroup from "../components/dg/DgFormGroup.vue";
 
 export default {
-    components: { DgButton, DgText, DgBadge, DgFormInput, DgFormGroup },
+    components: { Orb, DgButton, DgText, DgFormInput, DgFormGroup },
     data() {
         return {
+            runners: [],
+            showCreate: false,
+            newOrg: "u128",
+            creating: false,
             form: { arcturusDeployUrl: "", giteaToken: "", giteaUrl: "" },
             saving: false, saved: false,
-            runners: [], managedStacks: [],
         };
     },
-    mounted() { this.load(); this.pollRunners(); this.loadStacks(); },
+    mounted() { this.loadRunners(); this.loadSettings(); },
     methods: {
-        async load() {
+        async loadRunners() {
+            try {
+                const res = await fetch("/api/extensions/arcturus/runners");
+                const data = await res.json();
+                this.runners = data.runners || [];
+            } catch { /* ignore */ }
+        },
+        async createRunner() {
+            this.creating = true;
+            try {
+                await fetch("/api/extensions/arcturus/runners/create", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ org: this.newOrg }),
+                });
+                this.showCreate = false;
+                await this.loadRunners();
+            } catch { /* ignore */ }
+            this.creating = false;
+        },
+        async deleteRunner(name) {
+            try {
+                await fetch(`/api/extensions/arcturus/runners/${encodeURIComponent(name)}`, { method: "DELETE" });
+                await this.loadRunners();
+            } catch { /* ignore */ }
+        },
+        async loadSettings() {
             try {
                 const res = await fetch("/api/extensions/arcturus/settings");
                 const data = await res.json();
@@ -70,7 +109,7 @@ export default {
                 this.form.giteaUrl = data.giteaUrl || "";
             } catch { /* ignore */ }
         },
-        async save() {
+        async saveSettings() {
             this.saving = true;
             try {
                 const body = {};
@@ -78,35 +117,13 @@ export default {
                 if (this.form.giteaToken) body.giteaToken = this.form.giteaToken;
                 if (this.form.giteaUrl) body.giteaUrl = this.form.giteaUrl;
                 await fetch("/api/extensions/arcturus/settings", {
-                    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body),
                 });
                 this.saved = true; setTimeout(() => this.saved = false, 3000);
             } catch { /* ignore */ }
             this.saving = false;
-        },
-        async pollRunners() {
-            try {
-                const res = await fetch("/api/extensions/arcturus/runners");
-                const data = await res.json();
-                this.runners = data.runners || [];
-            } catch { /* ignore */ }
-        },
-        async loadStacks() {
-            try {
-                const res = await fetch("/api/extensions/arcturus/stacks");
-                const data = await res.json();
-                this.managedStacks = data.stacks?.filter((s) => s.managedByArcturus) || [];
-            } catch { /* ignore */ }
-        },
-        async deploy(name) {
-            try {
-                await fetch("/api/extensions/arcturus/deploy", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ stack: name }),
-                });
-                setTimeout(() => this.loadStacks(), 3000);
-            } catch { /* ignore */ }
         },
     },
 };
