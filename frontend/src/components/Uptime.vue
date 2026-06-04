@@ -1,7 +1,7 @@
 <template>
     <span class="d-inline-flex align-items-center gap-1">
-        <Orb :color="orbColor" :size="12" :title="statusName" />
-        <span v-if="showLabel" class="small">{{ statusName }}</span>
+        <Orb :color="orbColor" :title="statusName" />
+        <span v-if="!iconOnly" class="small">{{ statusName }}</span>
     </span>
 </template>
 
@@ -15,7 +15,8 @@ export default {
     components: { Orb },
     props: {
         stack: { type: Object, default: null },
-        showLabel: { type: Boolean, default: false },
+        fixedWidth: { type: Boolean, default: false },
+        iconOnly: { type: Boolean, default: false },
         pill: { type: Boolean, default: false },
     },
     computed: {

@@ -18,6 +18,9 @@ const GlobalEnv = () => import("./components/settings/GlobalEnv.vue");
 import About from "./components/settings/About.vue";
 import Webhook from "./components/settings/Webhook.vue";
 
+// Extension pages (registered at build time)
+import ArcturusPage from "./extensions/arcturus/ArcturusPage.vue";
+
 const routes = [
     {
         path: "/empty",
@@ -63,6 +66,10 @@ const routes = [
                     {
                         path: "/console/:endpoint",
                         component: Console,
+                    },
+                    {
+                        path: "/extensions/arcturus",
+                        component: ArcturusPage,
                     },
                     {
                         path: "/settings",

@@ -1,0 +1,36 @@
+/* Dockge Extension UI Kit — dark theme (matches Dockge's $dark-* vars) */
+:root {
+    --dg-primary: #74c2ff;
+    --dg-danger: #dc3545;
+    --dg-warning: #f8a306;
+    --dg-info: #74c2ff;
+    --dg-bg: #0d1117;
+    --dg-surface: #161b22;
+    --dg-surface-hover: #1d2634;
+    --dg-text: #b1b8c0;
+    --dg-text-secondary: #575c62;
+    --dg-border: #1d2634;
+    --dg-radius: 8px;
+    --dg-radius-lg: 12px;
+    --dg-shadow: none;
+    --dg-font: "Inter", -apple-system, sans-serif;
+    --dg-font-mono: "JetBrains Mono", monospace;
+}
+.dg-card {
+    background: var(--dg-surface);
+    border-radius: var(--dg-radius-lg);
+    padding: 20px;
+}
+.dg-badge {
+    background: var(--dg-surface-hover);
+    color: var(--dg-text);
+    padding: 2px 8px; border-radius: 50rem; font-size: .75em;
+}
+.dg-btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+    border-radius: 50rem; border: none; cursor: pointer; font-size: .875rem;
+    background: var(--dg-surface-hover); color: var(--dg-text);
+}
+.dg-text-muted { color: var(--dg-text-secondary); }
+.dg-flex { display: flex; align-items: center; gap: 8px; }
+.dg-mb-2 { margin-bottom: 8px; }

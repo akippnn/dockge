@@ -52,7 +52,15 @@ export default {
                     if (!entry.isDirectory()) continue;
                     const sp = path.join(stacksDir, entry.name);
                     const hasCompose = fs.existsSync(path.join(sp, "compose.yaml"));
-                    const isProtected = fs.existsSync(path.join(sp, ".dockge-protect"));
+                    const protectPath = path.join(sp, ".dockge-protect");
+                    const isProtected = fs.existsSync(protectPath);
+                    let managedBy = "";
+                    if (isProtected) {
+                        try {
+                            const data = JSON.parse(fs.readFileSync(protectPath, "utf-8"));
+                            managedBy = data.managed_by || "";
+                        } catch { /* ignore */ }
+                    }
                     if (!hasCompose) continue;
                     let status = "unknown";
                     try {
@@ -62,7 +70,7 @@ export default {
                         ).trim();
                         status = out.includes("Up") ? "running" : "stopped";
                     } catch { /* ignore */ }
-                    stacks.push({ name: entry.name, status, dockgeProtect: isProtected, managedByArcturus: isProtected });
+                    stacks.push({ name: entry.name, status, dockgeProtect: isProtected, managedByArcturus: managedBy === "terraform" });
                 }
                 res.json({ stacks });
             } catch (e: any) {
