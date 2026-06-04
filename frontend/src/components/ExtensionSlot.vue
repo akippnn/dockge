@@ -30,11 +30,29 @@ export default {
         slotName: { type: String, required: true },
         extensionName: { type: String, default: "" },
     },
+    data() {
+        return {
+            enabledExtensions: new Set(),
+            loaded: false,
+        };
+    },
+    async mounted() {
+        try {
+            const res = await fetch("/api/extensions/list");
+            const list = await res.json();
+            for (const ext of list) {
+                if (ext.enabled) this.enabledExtensions.add(ext.name.toLowerCase());
+            }
+        } catch { /* ignore */ }
+        this.loaded = true;
+    },
     computed: {
         matching() {
             const list = [];
             for (const [extName, slots] of Object.entries(extComponentMap)) {
-                if (this.extensionName && this.extensionName !== extName) continue;
+                const extKey = extName.toLowerCase();
+                if (this.loaded && !this.enabledExtensions.has(extKey)) continue;
+                if (this.extensionName && this.extensionName !== extKey) continue;
                 const comp = slots[this.slotName];
                 if (comp) list.push({ name: extName, component: comp });
             }
