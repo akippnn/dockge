@@ -1,56 +1,27 @@
 <template>
-    <span :class="className">{{ statusName }}</span>
+    <span class="d-inline-flex align-items-center gap-1">
+        <Orb :color="orbColor" :size="12" :title="statusName" />
+        <span v-if="showLabel" class="small">{{ statusName }}</span>
+    </span>
 </template>
 
 <script>
 import { statusColor, statusNameShort } from "../../../common/util-common";
+import Orb from "./Orb.vue";
+
+const colorMap = { green: "green", yellow: "yellow", red: "red", gray: "gray" };
 
 export default {
+    components: { Orb },
     props: {
-        stack: {
-            type: Object,
-            default: null,
-        },
-        fixedWidth: {
-            type: Boolean,
-            default: false,
-        },
+        stack: { type: Object, default: null },
+        showLabel: { type: Boolean, default: false },
+        pill: { type: Boolean, default: false },
     },
-
     computed: {
-        uptime() {
-            return this.$t("notAvailableShort");
-        },
-
-        color() {
-            return statusColor(this.stack?.status);
-        },
-
-        statusName() {
-            return this.$t(statusNameShort(this.stack?.status));
-        },
-
-        className() {
-            let className = `badge rounded-pill bg-${this.color}`;
-
-            if (this.fixedWidth) {
-                className += " fixed-width";
-            }
-            return className;
-        },
+        color() { return statusColor(this.stack?.status); },
+        orbColor() { return colorMap[this.color] || "gray"; },
+        statusName() { return this.$t(statusNameShort(this.stack?.status)); },
     },
 };
 </script>
-
-<style scoped>
-.badge {
-    min-width: 62px;
-
-}
-
-.fixed-width {
-    width: 62px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-</style>

@@ -1,6 +1,6 @@
 <template>
     <router-link :to="url" :class="{ 'dim' : !stack.isManagedByDockge }" class="item">
-        <Uptime :stack="stack" :fixed-width="true" class="me-2" />
+        <Uptime :stack="stack" class="me-2" :show-label="false" />
         <div class="title">
             <span>{{ stackName }}</span>
         </div>
