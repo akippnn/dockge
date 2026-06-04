@@ -86,6 +86,7 @@ export class Stack {
             isManagedByDockge: this.isManagedByDockge,
             composeFileName: this._composeFileName,
             endpoint,
+            isProtected: this.isProtected,
         };
     }
 
@@ -105,6 +106,10 @@ export class Stack {
 
     get isManagedByDockge() : boolean {
         return fs.existsSync(this.path) && fs.statSync(this.path).isDirectory();
+    }
+
+    get isProtected() : boolean {
+        return fs.existsSync(path.join(this.path, ".dockge-protect"));
     }
 
     get status() : number {
@@ -192,6 +197,11 @@ export class Stack {
             if (!await fileExists(dir)) {
                 throw new ValidationError("Stack not found");
             }
+
+            // Block overwriting protected stacks
+            if (this.isProtected) {
+                throw new ValidationError("This stack is protected by .dockge-protect and cannot be modified via Dockge. Use Terraform or the underlying compose tool.");
+            }
         }
 
         // Write or overwrite the compose.yaml
@@ -215,6 +225,12 @@ export class Stack {
 
     async delete(socket: DockgeSocket) : Promise<number> {
         const terminalName = getComposeTerminalName(socket.endpoint, this.name);
+
+        // Block deleting protected stacks
+        if (this.isProtected) {
+            throw new Error("This stack is protected by .dockge-protect and cannot be deleted via Dockge.");
+        }
+
         let exitCode = await Terminal.exec(this.server, socket, terminalName, "docker", this.getComposeOptions("down", "--remove-orphans"), this.path);
         if (exitCode !== 0) {
             throw new Error("Failed to delete, please check the terminal output for more information.");

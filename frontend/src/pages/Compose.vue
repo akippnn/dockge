@@ -4,6 +4,9 @@
             <h1 v-if="isAdd" class="mb-3">{{ $t("compose") }}</h1>
             <h1 v-else class="mb-3">
                 <Uptime :stack="globalStack" :pill="true" /> {{ stack.name }}
+                <span v-if="stack.isProtected" class="badge bg-secondary ms-2" style="font-size: 0.5em; vertical-align: middle;">
+                    <font-awesome-icon icon="lock" class="me-1" />PROTECTED
+                </span>
                 <span v-if="$root.agentCount > 1 && endpoint !== ''" class="agent-name">
                     ({{ endpointDisplay }})
                 </span>
@@ -11,17 +14,17 @@
 
             <div v-if="stack.isManagedByDockge" class="mb-3">
                 <div class="btn-group me-2" role="group">
-                    <button v-if="isEditMode" class="btn btn-primary" :disabled="processing" @click="deployStack">
+                    <button v-if="isEditMode" class="btn btn-primary" :disabled="processing || stack.isProtected" @click="deployStack">
                         <font-awesome-icon icon="rocket" class="me-1" />
                         {{ $t("deployStack") }}
                     </button>
 
-                    <button v-if="isEditMode" class="btn btn-normal" :disabled="processing" @click="saveStack">
+                    <button v-if="isEditMode" class="btn btn-normal" :disabled="processing || stack.isProtected" @click="saveStack">
                         <font-awesome-icon icon="save" class="me-1" />
                         {{ $t("saveStackDraft") }}
                     </button>
 
-                    <button v-if="!isEditMode" class="btn btn-secondary" :disabled="processing" @click="enableEditMode">
+                    <button v-if="!isEditMode" class="btn btn-secondary" :disabled="processing || stack.isProtected" @click="enableEditMode">
                         <font-awesome-icon icon="pen" class="me-1" />
                         {{ $t("editStack") }}
                     </button>
@@ -55,7 +58,7 @@
                 </div>
 
                 <button v-if="isEditMode && !isAdd" class="btn btn-normal" :disabled="processing" @click="discardStack">{{ $t("discardStack") }}</button>
-                <button v-if="!isEditMode" class="btn btn-danger" :disabled="processing" @click="showDeleteDialog = !showDeleteDialog">
+                <button v-if="!isEditMode" class="btn btn-danger" :disabled="processing || stack.isProtected" @click="showDeleteDialog = !showDeleteDialog">
                     <font-awesome-icon icon="trash" class="me-1" />
                     {{ $t("deleteStack") }}
                 </button>
@@ -179,7 +182,7 @@
                             wrap="true"
                             dark="true"
                             tab="true"
-                            :disabled="!isEditMode"
+                            :disabled="!isEditMode || stack.isProtected"
                             :hasFocus="editorFocus"
                             @change="yamlCodeChange"
                         />
@@ -704,6 +707,10 @@ export default {
         },
 
         deleteDialog() {
+            if (this.stack.isProtected) {
+                this.$root.toastError("This stack is protected and cannot be deleted via Dockge.");
+                return;
+            }
             this.$root.emitAgent(this.endpoint, "deleteStack", this.stack.name, (res) => {
                 this.$root.toastRes(res);
                 if (res.ok) {
@@ -769,6 +776,10 @@ export default {
         },
 
         enableEditMode() {
+            if (this.stack.isProtected) {
+                this.$root.toastError("This stack is protected and cannot be edited via Dockge.");
+                return;
+            }
             this.isEditMode = true;
         },
 
