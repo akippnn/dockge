@@ -1,0 +1,7 @@
+{
+    "name": "Discord",
+    "version": "1.0.0",
+    "description": "Sends stack lifecycle notifications to a Discord webhook.",
+    "permissions": ["stack:lifecycle:notify", "settings:page"],
+    "capabilities": { "hooks": ["onStackAction"] }
+}

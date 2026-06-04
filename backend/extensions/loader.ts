@@ -2,36 +2,60 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 import { log } from "../log";
+import { Settings } from "../settings";
+
+export interface ExtensionManifest {
+    name: string;
+    version: string;
+    description: string;
+    permissions: string[];
+    capabilities: {
+        navLinks?: { path: string; icon: string; text: string }[];
+        widgets?: { slot: string; component: string }[];
+        hooks?: string[];
+    };
+}
 
 export interface DockgeExtension {
     name: string;
     routes?: (router: any) => void;
     augmentStack?: (stack: any) => any;
-    settings?: Record<string, { label: string; type?: string; default?: string }>;
-    // Lifecycle hooks — called after stack actions complete
     onStackAction?: (action: string, stackName: string, success: boolean) => void;
 }
 
-const loadedExtensions: Map<string, DockgeExtension> = new Map();
+const loadedExtensions: Map<string, { manifest: ExtensionManifest; backend: DockgeExtension | null }> = new Map();
 
-export function getExtensions(): Map<string, DockgeExtension> {
+export function getExtensions(): Map<string, { manifest: ExtensionManifest; backend: DockgeExtension | null }> {
     return loadedExtensions;
 }
 
-/** Notify all loaded extensions of a stack action */
+export async function isEnabled(name: string): Promise<boolean> {
+    const val = await Settings.get(`ext_enabled_${name}`);
+    return val === true || val === "true";
+}
+
+export async function setEnabled(name: string, enabled: boolean): Promise<void> {
+    await Settings.set(`ext_enabled_${name}`, enabled ? "true" : "false", "extensions");
+}
+
 export function notifyExtensions(action: string, stackName: string, success: boolean): void {
     for (const [_, ext] of loadedExtensions) {
-        if (ext.onStackAction) {
-            try {
-                ext.onStackAction(action, stackName, success);
-            } catch { /* ignore extension errors */ }
+        if (ext.backend?.onStackAction) {
+            try { ext.backend.onStackAction(action, stackName, success); } catch { /* ignore */ }
         }
     }
 }
 
+export function getManifests(): ExtensionManifest[] {
+    const result: ExtensionManifest[] = [];
+    for (const [_, ext] of loadedExtensions) {
+        result.push(ext.manifest);
+    }
+    return result;
+}
+
 export async function loadExtensions(): Promise<void> {
     const here = fileURLToPath(import.meta.url);
-    // Extensions are at /app/extensions/ in the container
     const candidates = ["/app/extensions", path.join(path.dirname(here), "..", "..", "extensions")];
     let extDir = "";
     for (const c of candidates) {
@@ -39,7 +63,7 @@ export async function loadExtensions(): Promise<void> {
     }
 
     if (!extDir) {
-        log.info("extensions", "No extensions directory found, skipping");
+        log.info("extensions", "No extensions directory found");
         return;
     }
 
@@ -51,15 +75,17 @@ export async function loadExtensions(): Promise<void> {
         if (!fs.existsSync(metaPath)) continue;
 
         try {
-            const meta = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
+            const manifest: ExtensionManifest = JSON.parse(fs.readFileSync(metaPath, "utf-8"));
             const backendPath = path.join(extDir, dir.name, "backend", "index.ts");
+
+            let backend: DockgeExtension | null = null;
             if (fs.existsSync(backendPath)) {
-                // tsx handles .ts imports natively
                 const extModule = await import(backendPath);
-                const ext = extModule.default || extModule;
-                loadedExtensions.set(dir.name, ext);
-                log.info("extensions", `Loaded extension: ${meta.name} v${meta.version}`);
+                backend = extModule.default || extModule;
             }
+
+            loadedExtensions.set(dir.name, { manifest, backend });
+            log.info("extensions", `Loaded extension: ${manifest.name} v${manifest.version}`);
         } catch (e: any) {
             log.warn("extensions", `Failed to load extension ${dir.name}: ${e.message}`);
         }

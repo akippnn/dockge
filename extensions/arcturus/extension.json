@@ -1,5 +1,10 @@
 {
     "name": "Arcturus",
-    "description": "Manages stacks deployed via arcturus/deploy. Shows deployment status, runner build activity, and provides deploy/destroy controls.",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "description": "Manages stacks deployed via arcturus/deploy. Shows deployment status, runner activity, and provides deploy controls.",
+    "permissions": ["stack:read", "stack:badge", "stack:actions", "settings:page", "home:widget", "nav:link"],
+    "capabilities": {
+        "navLinks": [{ "path": "/extensions/arcturus", "icon": "cubes", "text": "Arcturus" }],
+        "hooks": ["onStackAction", "onStackRender"]
+    }
 }
